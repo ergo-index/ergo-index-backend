@@ -1,0 +1,41 @@
+# Bloop
+.bloop/
+
+# Metals
+.metals/
+project/**/metals.sbt
+
+# SBT
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+.history
+.cache
+.lib/
+
+# Scala
+*.class
+*.log
+
+# VM crash logs
+hs_err_pid*
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+.ionide
+
+# JWT keys
+jwt_private_key
+jwt_public_key
+
+# Mac
+.DS_Store
