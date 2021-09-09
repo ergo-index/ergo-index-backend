@@ -35,28 +35,19 @@ import scala.util.{Failure, Success, Try}
 
 object Server extends IOApp.Simple:
 
-  private def getAllRoutes(
-      authService: AuthService,
-      jwtService: JwtService,
-      authMiddleware: AuthMiddleware,
-      authUserRepo: AuthUserRepo
-  ) =
-    val authedRoutes = authMiddleware.toAuthedRoutes(UserRoutes.routes, jwtService)
-    val publicRoutes = AuthRoutes(authService, authUserRepo).routes
-    val allRoutes    = authedRoutes <+> publicRoutes
-    allRoutes
+  def run: IO[Unit] = serverProgram.use(_ => IO.never)
 
-  private def createServer =
+  lazy val serverProgram =
     // Instantiate repo and service for JWT keys using BouncyCastle and Ed25519
     val keyPairRepo: BcKeyRepo       = Ed25519FileBcKeyRepo()
     val keyPairService: BcKeyService = Ed25519BcKeyService()
 
-    for {
+    for
       // Add BouncyCastle security provider for JWTs, or abort on error
       addBCResult <- Resource.eval(keyPairService.addBcProvider())
       _ <- Resource.eval(
         addBCResult.fold(
-          err => IO.raiseError(err),
+          IO.raiseError,
           _ match
             case SecurityProviderResult.Success =>
               IO.println("Added BouncyCastle security provider")
@@ -69,7 +60,7 @@ object Server extends IOApp.Simple:
       keyPairGeneratorResult <- Resource.eval(keyPairService.getGenerator())
       keyPairGenerator <- Resource.eval(
         keyPairGeneratorResult.fold(
-          err => IO.raiseError(err),
+          IO.raiseError,
           keyPairGenerator => IO(keyPairGenerator)
         )
       )
@@ -79,29 +70,29 @@ object Server extends IOApp.Simple:
           .flatMap(_ match
             case Right(keyPair) => IO(keyPair)
             case Left(BcKeyRepoErr.InvalidPrivateKey) | Left(BcKeyRepoErr.InvalidPublicKey) =>
-              for {
+              for
                 _         <- IO.println("Error reading key pair. Trying to generate a new one...")
                 keyPair   <- keyPairService.generate(keyPairGenerator)
                 putResult <- keyPairRepo.put(keyPair)
                 _ <- putResult.fold(
-                  err => IO.raiseError(new RuntimeException("Error saving key: " + err)),
+                  err => IO.raiseError(RuntimeException("Error saving key: " + err)),
                   _ => IO(())
                 )
                 _ <- IO.println("Created and saved new private/public key pair")
-              } yield keyPair
+              yield keyPair
             case Left(BcKeyRepoErr.DatabaseDown) =>
               IO.raiseError(
-                new RuntimeException("Unable to read JWT keys because the database is down")
+                RuntimeException("Unable to read JWT keys because the database is down")
               )
             case Left(BcKeyRepoErr.WrongAlgorithm) =>
               IO.raiseError(
-                new RuntimeException(
+                RuntimeException(
                   "Unable to read JWT keys because a different algorithm from the one specified now was given when they were encrypted"
                 )
               )
             case Left(BcKeyRepoErr.UnknownError) =>
               IO.raiseError(
-                new RuntimeException("Unable to read JWT keys because an unknown error occurred")
+                RuntimeException("Unable to read JWT keys because an unknown error occurred")
               )
           )
       )
@@ -119,6 +110,15 @@ object Server extends IOApp.Simple:
         .bindSocketAddress(InetSocketAddress(host, port))
         .withHttpApp(getAllRoutes(authService, jwtService, authMiddleware, authUserRepo).orNotFound)
         .resource
-    } yield server
+    yield server
 
-  def run: IO[Unit] = createServer.use(_ => IO.never)
+  private def getAllRoutes(
+      authService: AuthService,
+      jwtService: JwtService,
+      authMiddleware: AuthMiddleware,
+      authUserRepo: AuthUserRepo
+  ) =
+    val authedRoutes = authMiddleware.toAuthedRoutes(UserRoutes.routes, jwtService)
+    val publicRoutes = AuthRoutes(authService, authUserRepo).routes
+    val allRoutes    = authedRoutes <+> publicRoutes
+    allRoutes

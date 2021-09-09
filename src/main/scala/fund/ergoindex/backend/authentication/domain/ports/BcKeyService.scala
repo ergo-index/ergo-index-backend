@@ -22,6 +22,6 @@ trait BcKeyService:
 
   def getGenerator(): IO[Either[Throwable, KeyPairGenerator]]
 
-  /** @return a newly-generated KeyPair wrapped in a Success, or a Failure if an error occurred
+  /** @return a newly-generated KeyPair
     */
   def generate(generator: KeyPairGenerator): IO[KeyPair]

@@ -29,18 +29,18 @@ import fs2.io.file.{Files, Path}
 class Ed25519FileBcKeyRepo extends BcKeyRepo:
 
   override def get(): IO[Either[BcKeyRepoErr, KeyPair]] =
-    (for {
+    (for
       privateKey <- readKeyFromPath[PrivateKey]("jwt_private_key", stringToPrivateKey)
       publicKey  <- readKeyFromPath[PublicKey]("jwt_public_key", stringToPublicKey)
-    } yield KeyPair(publicKey, privateKey)).value
+    yield KeyPair(publicKey, privateKey)).value
 
   override def put(keyPair: KeyPair): IO[Either[BcKeyRepoErr, Unit]] =
-    (for {
+    (for
       privateKey <- EitherT(keyToString(keyPair.getPrivate))
       publicKey  <- EitherT(keyToString(keyPair.getPublic))
       _          <- writeKeyToFile(privateKey, "jwt_private_key")
       _          <- writeKeyToFile(publicKey, "jwt_public_key")
-    } yield ()).value
+    yield ()).value
 
   def keyToString(key: Key): IO[Either[BcKeyRepoErr, String]] =
     IO {
@@ -58,8 +58,7 @@ class Ed25519FileBcKeyRepo extends BcKeyRepo:
       try
         val spec = PKCS8EncodedKeySpec(Base64.getDecoder().decode(key))
         Right(KeyFactory.getInstance(keyAlgo, provider).generatePrivate(spec))
-      catch case err: Exception => Left(BcKeyRepoErr.InvalidPrivateKey)
-      finally Left(BcKeyRepoErr.InvalidPrivateKey)
+      catch _ => Left(BcKeyRepoErr.InvalidPrivateKey)
     }
 
   def stringToPublicKey(
@@ -71,8 +70,7 @@ class Ed25519FileBcKeyRepo extends BcKeyRepo:
       try
         val spec = X509EncodedKeySpec(Base64.getDecoder().decode(key))
         Right(KeyFactory.getInstance(keyAlgo, provider).generatePublic(spec))
-      catch case err: Exception => Left(BcKeyRepoErr.InvalidPublicKey)
-      finally Left(BcKeyRepoErr.InvalidPublicKey)
+      catch _ => Left(BcKeyRepoErr.InvalidPublicKey)
     }
 
   def verifyKeyPathExists(pathString: String): IO[Either[BcKeyRepoErr, Path]] =
@@ -81,15 +79,14 @@ class Ed25519FileBcKeyRepo extends BcKeyRepo:
         val path = Path(pathString)
         if path.toNioPath.toFile.exists then Right(path)
         else Left(BcKeyRepoErr.InvalidPublicKey)
-      catch case err: Exception => Left(BcKeyRepoErr.UnknownError)
-      finally Left(BcKeyRepoErr.UnknownError)
+      catch _ => Left(BcKeyRepoErr.UnknownError)
     }
 
   def readKeyFromPath[KeyType <: Key](
       pathName: String,
       parseFunction: (String, String, String) => IO[Either[BcKeyRepoErr, KeyType]]
   ): EitherT[IO, BcKeyRepoErr, KeyType] =
-    for {
+    for
       path <- EitherT(verifyKeyPathExists(pathName))
       keyStringIo = Files[IO]
         .readAll(path)
@@ -99,10 +96,10 @@ class Ed25519FileBcKeyRepo extends BcKeyRepo:
       keyString <- EitherT.right[BcKeyRepoErr](keyStringIo)
       parseResult = parseFunction(keyString, "Ed25519", "BC")
       key <- EitherT(parseResult)
-    } yield key
+    yield key
 
   def writeKeyToFile(privateKey: String, pathName: String): EitherT[IO, BcKeyRepoErr, Unit] =
-    for {
+    for
       _ <- EitherT.right[BcKeyRepoErr](
         Stream(privateKey)
           .through(text.utf8.encode)
@@ -110,4 +107,4 @@ class Ed25519FileBcKeyRepo extends BcKeyRepo:
           .compile
           .drain
       )
-    } yield ()
+    yield ()

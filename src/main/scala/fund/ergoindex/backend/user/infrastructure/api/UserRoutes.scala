@@ -10,7 +10,6 @@ import org.http4s.dsl.io.*
   */
 object UserRoutes:
   val routes = HttpRoutes.of[IO] { case req @ GET -> Root / "users" =>
-    for {
-      response <- Ok()
-    } yield response
+    for response <- Ok()
+    yield response
   }

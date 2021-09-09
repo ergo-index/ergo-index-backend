@@ -52,7 +52,7 @@ class Ed25519BcKeyService extends BcKeyService:
         case err: IllegalArgumentException  => Left(err)
         case err2: NoSuchAlgorithmException => Left(err2)
         case err3: NullPointerException     => Left(err3)
-      finally Left(new RuntimeException("Unable to get the KeyPairGenerator instance"))
+      finally Left(RuntimeException("Unable to get the KeyPairGenerator instance"))
     }
 
   override def generate(generator: KeyPairGenerator): IO[KeyPair] =
