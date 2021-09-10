@@ -26,13 +26,12 @@ import org.http4s.dsl.io.*
 case class AuthRoutes(authService: AuthService, authUserRepo: AuthUserRepo):
 
   private def logInRoute = HttpRoutes.of[IO] { case req @ POST -> Root / "authenticate" =>
-    val action = for
-      logInRequest <- EitherT.right(req.as[LogInRequest])
-      authUser     <- authUserRepo.get(logInRequest.email)
-      token <- EitherT(
-        IO(authService.authenticate(logInRequest.password, authUser))
-      )
-    yield token
+    val action =
+      for
+        logInRequest <- EitherT.right(req.as[LogInRequest])
+        authUser     <- EitherT(authUserRepo.get(logInRequest.email))
+        token        <- EitherT(IO(authService.authenticate(logInRequest.password, authUser)))
+      yield token
 
     action.value.flatMap {
       case Right(token) => Ok(token.asJson)

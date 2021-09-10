@@ -1,11 +1,10 @@
 package fund.ergoindex.backend
 package authentication.domain.ports
 
+import cats.data.EitherT
 import cats.effect.IO
 
 import java.security.{KeyPair, KeyPairGenerator}
-
-import scala.util.Try
 
 /** The result of trying to add a security provider.
   */
@@ -18,9 +17,9 @@ trait BcKeyService:
   /** Adds BouncyCastle to the list of security providers.
     * This is needed to generate [[java.security.KeyPair]]s.
     */
-  def addBcProvider(): IO[Either[Throwable, SecurityProviderResult]]
+  def addBcProvider(): EitherT[IO, Throwable, SecurityProviderResult]
 
-  def getGenerator(): IO[Either[Throwable, KeyPairGenerator]]
+  def getGenerator(): EitherT[IO, Throwable, KeyPairGenerator]
 
   /** @return a newly-generated KeyPair
     */

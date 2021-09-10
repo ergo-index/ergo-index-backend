@@ -1,7 +1,6 @@
 package fund.ergoindex.backend
 package authentication.domain.ports
 
-import cats.data.EitherT
 import cats.effect.IO
 
 import fund.ergoindex.backend.authentication.domain.models.AuthUser
@@ -10,4 +9,4 @@ import fund.ergoindex.backend.authentication.domain.models.AuthUser
   */
 trait AuthUserRepo:
   def create(authUser: AuthUser): IO[AuthUser]
-  def get(email: String): EitherT[IO, String, AuthUser]
+  def get(email: String): IO[Either[String, AuthUser]]

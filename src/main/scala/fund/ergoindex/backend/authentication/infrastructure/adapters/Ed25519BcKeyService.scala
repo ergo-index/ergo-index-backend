@@ -1,6 +1,7 @@
 package fund.ergoindex.backend
 package authentication.infrastructure.adapters
 
+import cats.data.EitherT
 import cats.effect.IO
 
 import fund.ergoindex.backend.authentication.domain.ports.{
@@ -34,17 +35,18 @@ import scala.util.{Failure, Success, Try}
   */
 class Ed25519BcKeyService extends BcKeyService:
 
-  override def addBcProvider(): IO[Either[Throwable, SecurityProviderResult]] =
-    Option(Security.getProvider("BC")) match
+  override def addBcProvider(): EitherT[IO, Throwable, SecurityProviderResult] =
+    EitherT(Option(Security.getProvider("BC")) match
       case Some(_) => IO(Right(SecurityProviderResult.Already_Present))
       case None =>
         Try(Security.addProvider(BouncyCastleProvider())).fold(
           err => IO(Left(err)),
           _ => IO(Right(SecurityProviderResult.Success))
         )
+    )
 
-  override def getGenerator(): IO[Either[Throwable, KeyPairGenerator]] =
-    IO {
+  override def getGenerator(): EitherT[IO, Throwable, KeyPairGenerator] =
+    EitherT(IO {
       try
         val keyPairGenerator = KeyPairGenerator.getInstance("Ed25519", "BC")
         Right(keyPairGenerator)
@@ -53,7 +55,7 @@ class Ed25519BcKeyService extends BcKeyService:
         case err2: NoSuchAlgorithmException => Left(err2)
         case err3: NullPointerException     => Left(err3)
       finally Left(RuntimeException("Unable to get the KeyPairGenerator instance"))
-    }
+    })
 
   override def generate(generator: KeyPairGenerator): IO[KeyPair] =
     IO(generator.generateKeyPair())
