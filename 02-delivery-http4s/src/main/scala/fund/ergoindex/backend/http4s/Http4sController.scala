@@ -7,7 +7,7 @@ import cats.effect.unsafe.implicits.global // TODO: Remove after debug messages 
 import cats.implicits.*
 
 import fund.ergoindex.backend.auth.{AuthUserBoundary, AuthUserEntity, E => AuthE}
-import fund.ergoindex.backend.jwt.JwtBoundary
+import fund.ergoindex.backend.jwt.{E => JwtE, JwtBoundary}
 
 import io.circe.*
 import io.circe.generic.semiauto.*
@@ -81,10 +81,13 @@ object Http4sController:
             headers match
               case Some(authHeader) =>
                 val jwt = authHeader.value.replace("Bearer ", "")
-                IO.println("jwt: " + jwt).unsafeRunSync()                   // TODO: Remove debug
-                jwtBoundary.decodeContentFromJwt(jwt).unsafeRunSync() match // TODO: Remove unsafe
-                  case Some(_) => resp
-                  case None    => authError.unsafeRunSync() // TODO: Remove unsafe
+                jwtBoundary.decodeContentFromJwt(jwt) match
+                  case Right(content) =>
+                    println("decoded JWT content: " + content) // TODO: Remove debug
+                    resp
+                  case Left(err: JwtE) =>
+                    println("err: " + err) // TODO: Remove debug
+                    resp
               case None => authError.unsafeRunSync() // TODO: Remove unsafe
           case resp =>
             resp

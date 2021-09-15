@@ -29,8 +29,7 @@ object Program:
       http4sBoundary <- DependencyGraph.make(keyPair.getPrivate, keyPair.getPublic)
 
       server <- HttpServer.make[E](HttpApp.make(http4sBoundary), executionContext, "0.0.0.0", 8080)
-
-      _ <- server.serve
+      _      <- server.serve
     yield ()
 
   // TODO: Put these strings into the actual error types and then just do IO.raiseError(RuntimeException(e.msg))

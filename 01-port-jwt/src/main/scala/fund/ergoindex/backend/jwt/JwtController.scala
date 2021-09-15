@@ -1,8 +1,11 @@
 package fund.ergoindex.backend
 package jwt
 
-import cats.effect.IO
+import cats.effect.{Clock, IO}
+
+enum E:
+  case TokenExpired, TokenInvalid
 
 trait JwtController[PrivateKey, PublicKey]:
-  def encodeContentIntoJwt(content: String): IO[String]
-  def decodeContentFromJwt(jwt: String): IO[Option[String]]
+  def encodeContentIntoJwt(content: String)(using clock: Clock[IO]): IO[String]
+  def decodeContentFromJwt(jwt: String): Either[E, String]

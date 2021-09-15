@@ -1,16 +1,18 @@
 package fund.ergoindex.backend
 package jwt
 
-import cats.effect.IO
+import cats.effect.{Clock, IO}
 
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.syntax.*
 
 import java.security.{PrivateKey, PublicKey}
 
+import scala.concurrent.duration.{DAYS, FiniteDuration, MILLISECONDS}
 import scala.util.{Failure, Success, Try}
 
 import pdi.jwt.{JwtAlgorithm, JwtCirce, JwtClaim}
+import pdi.jwt.exceptions.JwtExpirationException
 
 object Ed25519JwtController:
   def make(
@@ -19,22 +21,23 @@ object Ed25519JwtController:
   ): JwtController[PrivateKey, PublicKey] = new:
     val algo = JwtAlgorithm.Ed25519
 
-    override def encodeContentIntoJwt(content: String): IO[String] = IO {
-      val jwt = JwtClaim(
-        content = content
-        // TODO: Enter the rest of the JWT Claim info like expiration, etc...
-      )
-      JwtCirce.encode(jwt, privateKey, algo)
-    }
+    override def encodeContentIntoJwt(content: String)(using clock: Clock[IO]): IO[String] =
+      for
+        currTime <- clock.realTime
+        claims = JwtClaim(
+          content = content,
+          issuer = Some("ergo-index.fund"),
+          subject = None,
+          audience = Some(Set("ergo-index.fund")),
+          expiration = Some((currTime + FiniteDuration(1, DAYS)).toMillis),
+          notBefore = None,
+          issuedAt = Some(currTime.toMillis)
+        )
+        jwt <- IO(JwtCirce.encode(claims, privateKey, algo))
+      yield jwt
 
-    override def decodeContentFromJwt(jwt: String): IO[Option[String]] = IO {
-      val decoded: Try[JwtClaim] = JwtCirce.decode(jwt, publicKey, Seq(algo))
-      decoded match
-        case Success(jwtClaim) =>
-          println("successfully decoded: " + jwtClaim) // TODO: Remove debug
-          Option(jwtClaim.content)
-        case Failure(_) =>
-          println("failed to decode token") // TODO: Remove debug
-          None
-      None
-    }
+    override def decodeContentFromJwt(jwt: String): Either[E, String] =
+      JwtCirce.decode(jwt, publicKey, Seq(algo)) match
+        case Success(claims: JwtClaim)          => Right(claims.content)
+        case Failure(_: JwtExpirationException) => Left(E.TokenExpired)
+        case Failure(_)                         => Left(E.TokenInvalid)
