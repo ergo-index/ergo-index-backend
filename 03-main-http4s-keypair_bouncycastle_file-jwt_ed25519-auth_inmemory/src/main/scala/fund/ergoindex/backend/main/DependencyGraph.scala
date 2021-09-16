@@ -9,20 +9,35 @@ import fund.ergoindex.backend.auth.{
   InMemoryAuthUserController,
   InMemoryAuthUserEntityGateway
 }
-import fund.ergoindex.backend.http4s.{Http4sBoundary, Http4sController}
+import fund.ergoindex.backend.http4s.{AuthMiddleware, HttpAppMaker, HttpBoundary, HttpController}
+import fund.ergoindex.backend.http4s.auth.{
+  HttpBoundary => AuthHttpBoundary,
+  HttpController => AuthHttpController
+}
+import fund.ergoindex.backend.http4s.user.{
+  HttpBoundary => UserHttpBoundary,
+  HttpController => UserHttpController
+}
 import fund.ergoindex.backend.jwt.{Ed25519JwtController, JwtBoundary}
+
+import org.http4s.HttpApp
 
 import java.security.{PrivateKey, PublicKey}
 
 object DependencyGraph:
-  def make(privateKey: PrivateKey, publicKey: PublicKey): IO[Http4sBoundary] = IO {
+  def make(privateKey: PrivateKey, publicKey: PublicKey): IO[HttpApp[IO]] = IO {
     val authUserEntityGateway = InMemoryAuthUserEntityGateway.make()
 
     val jwtController      = Ed25519JwtController.make(privateKey, publicKey)
     val authUserController = InMemoryAuthUserController.make(authUserEntityGateway)
+    val jwtBoundary        = JwtBoundary.make(jwtController)
+    val authUserBoundary   = AuthUserBoundary.make(authUserController)
 
-    val jwtBoundary      = JwtBoundary.make(jwtController)
-    val authUserBoundary = AuthUserBoundary.make(authUserController)
+    val authMiddleware     = AuthMiddleware.make(jwtBoundary)
+    val authHttpController = AuthHttpController.make(jwtBoundary, authUserBoundary)
+    val userHttpController = UserHttpController.make(authMiddleware)
+    val authHttpBoundary   = AuthHttpBoundary.make(authHttpController)
+    val userHttpBoundary   = UserHttpBoundary.make(userHttpController)
 
-    Http4sBoundary.make(Http4sController.make(jwtBoundary, authUserBoundary))
+    HttpAppMaker.make(authHttpBoundary, userHttpBoundary)
   }

@@ -29,7 +29,6 @@ class DefaultAuthMiddleware extends AuthMiddleware:
                 case Some(_) => resp
                 case None    => authError.unsafeRunSync()
             case None => authError.unsafeRunSync()
-        case resp =>
-          resp
+        case resp => resp
       }
   }

@@ -4,7 +4,7 @@ package main
 import cats.data.EitherT
 import cats.effect.IO
 
-import fund.ergoindex.backend.http4s.{HttpApp, HttpServer}
+import fund.ergoindex.backend.http4s.HttpServer
 import fund.ergoindex.backend.keypair.{
   BcEd25519KeyPairController,
   BcEd25519KeyPairEntityGateway,
@@ -24,12 +24,11 @@ object Program:
       keyPairBoundary <- IO(
         KeyPairBoundary.make(BcEd25519KeyPairController.make(BcEd25519KeyPairEntityGateway.make()))
       )
-      keyPairOrErr   <- keyPairBoundary.getOrGenerate().value
-      keyPair        <- keyPairOrErr.fold(throwKeyPairE, IO.apply)
-      http4sBoundary <- DependencyGraph.make(keyPair.getPrivate, keyPair.getPublic)
-
-      server <- HttpServer.make[E](HttpApp.make(http4sBoundary), executionContext, "0.0.0.0", 8080)
-      _      <- server.serve
+      keyPairOrErr <- keyPairBoundary.getOrGenerate().value
+      keyPair      <- keyPairOrErr.fold(throwKeyPairE, IO.apply)
+      httpApp      <- DependencyGraph.make(keyPair.getPrivate, keyPair.getPublic)
+      server       <- HttpServer.make[E](httpApp, executionContext, "0.0.0.0", 8080)
+      _            <- server.serve
     yield ()
 
   // TODO: Put these strings into the actual error types and then just do IO.raiseError(RuntimeException(e.msg))

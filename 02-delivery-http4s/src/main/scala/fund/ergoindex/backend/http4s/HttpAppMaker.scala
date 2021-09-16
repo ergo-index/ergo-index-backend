@@ -11,8 +11,8 @@ import org.http4s.server.middleware.Logger
 
 import scala.util.chaining.scalaUtilChainingOps
 
-object HttpApp:
-  def make(first: Http4sBoundary, remaining: Http4sBoundary*): HttpApp[IO] =
+object HttpAppMaker:
+  def make(first: HttpBoundary, remaining: HttpBoundary*): HttpApp[IO] =
     (first +: remaining)
       .map(_.routes)
       .reduceLeft(_ <+> _)
