@@ -5,16 +5,17 @@ import cats.data.EitherT
 import cats.effect.IO
 
 trait AuthUserBoundary:
-  def create(authUser: AuthUserEntity): IO[AuthUserEntity]
+  def create(authUser: AuthUserEntity): IO[Unit]
   def get(email: String): EitherT[IO, E, AuthUserEntity]
   def getIfValidCredentials(email: String, password: String): EitherT[IO, E, AuthUserEntity]
 
 object AuthUserBoundary:
   def make(controller: AuthUserController): AuthUserBoundary = new:
-    override def create(authUser: AuthUserEntity): IO[AuthUserEntity] =
+    override def create(authUser: AuthUserEntity): IO[Unit] =
       controller.create(authUser)
 
-    override def get(email: String): EitherT[IO, E, AuthUserEntity] = controller.get(email)
+    override def get(email: String): EitherT[IO, E, AuthUserEntity] =
+      EitherT(controller.get(email).map(_.toRight(E.UserNotFound)))
 
     override def getIfValidCredentials(
         email: String,

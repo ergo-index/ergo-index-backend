@@ -1,0 +1,7 @@
+ARG OPENJDK_TAG=8u292
+ARG SBT_VERSION=1.5.5
+FROM mozilla/sbt:${OPENJDK_TAG}_${SBT_VERSION}
+
+WORKDIR /project
+COPY . .
+ENTRYPOINT ["sbt", "run"]

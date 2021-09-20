@@ -1,0 +1,32 @@
+version: '3.9'
+
+networks:
+  ergo-index-fund-backend:
+    name: ergo-index-fund-backend
+    driver: bridge
+
+services:
+  # Main application
+  ergo-index-fund-backend:
+    container_name: ergo-index-fund-backend
+    build:
+      context: .
+      args:
+        - OPENJDK_TAG=8u292
+        - SBT_VERSION=1.5.5
+    ports:
+      - 8080:8080
+    depends_on:
+      - ergo-index-fund-redis
+    networks:
+      - ergo-index-fund-backend
+      
+  # Redis
+  ergo-index-fund-redis:
+    container_name: ergo-index-fund-redis
+    image: redis
+    volumes:
+      - ~/ergo-index-fund-backend_data/redis/data:/data
+      - ~/ergo-index-fund-backend_data/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - ergo-index-fund-backend

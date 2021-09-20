@@ -3,7 +3,7 @@ package auth
 
 import cats.effect.IO
 
-object InMemoryAuthUserController:
+object RedisAuthUserController:
   def make(entityGateway: AuthUserEntityGateway): AuthUserController = new:
     override def create(authUser: AuthUserEntity): IO[Unit] =
       entityGateway.create(authUser)

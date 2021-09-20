@@ -4,10 +4,14 @@ val circeVersion      = "0.14.1"
 val fs2Version        = "3.1.1"
 val http4sVersion     = "1.0.0-M23"
 val jwtVersion        = "8.0.2"
+val redis4catsVersion = "1.0.0"
 
 ThisBuild / organization := "fund.ergo-index"
 ThisBuild / scalaVersion := "3.0.0"
 ThisBuild / version      := "0.0.1-SNAPSHOT"
+
+// Set the default project to main
+Global / onLoad ~= (_ andThen ("project main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_redis" :: _))
 
 lazy val `port-keypair` = project
   .in(file("01-port-keypair"))
@@ -71,6 +75,18 @@ lazy val `persistence-auth-inmemory` = project
     )
   )
 
+lazy val `persistence-auth-redis` = project
+  .in(file("02-persistence-auth-redis"))
+  .dependsOn(`port-auth` % "compile->compile;test->test")
+  .settings(
+    libraryDependencies ++= Seq(
+      "dev.profunktor" %% "redis4cats-effects"  % redis4catsVersion,
+      "dev.profunktor" %% "redis4cats-log4cats" % redis4catsVersion,
+      "org.typelevel"  %% "cats-core"           % catsVersion,
+      "org.typelevel"  %% "cats-effect"         % catsEffectVersion
+    )
+  )
+
 lazy val `delivery-http4s` = project
   .in(file("02-delivery-http4s"))
   .dependsOn(`port-auth` % "compile->compile;test->test")
@@ -106,24 +122,24 @@ lazy val `main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_inmemory` = pro
     )
   )
 
-lazy val old = (project in file("old"))
-  //.dependsOn(`adapter-keypair-bouncycastle` % "compile->compile;test->test")
+lazy val `main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_redis` = project
+  .in(file("03-main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_redis"))
+  .dependsOn(`port-auth` % "compile->compile;test->test")
+  .dependsOn(`port-jwt` % "compile->compile;test->test")
+  .dependsOn(`port-keypair` % "compile->compile;test->test")
+  .dependsOn(`delivery-http4s` % "compile->compile;test->test")
+  .dependsOn(`adapter-keypair-bouncycastle_file` % "compile->compile;test->test")
+  .dependsOn(`adapter-jwt-ed25519` % "compile->compile;test->test")
+  .dependsOn(`persistence-auth-redis` % "compile->compile;test->test")
   .settings(
     libraryDependencies ++= Seq(
-      "co.fs2"               %% "fs2-core"            % fs2Version,
-      "co.fs2"               %% "fs2-io"              % fs2Version,
-      "com.github.jwt-scala" %% "jwt-core"            % jwtVersion,
-      "com.github.jwt-scala" %% "jwt-circe"           % jwtVersion,
-      "io.circe"             %% "circe-generic"       % circeVersion,
-      "org.http4s"           %% "http4s-circe"        % http4sVersion,
-      "org.http4s"           %% "http4s-dsl"          % http4sVersion,
-      "org.http4s"           %% "http4s-blaze-server" % http4sVersion,
-      "org.http4s"           %% "http4s-blaze-client" % http4sVersion,
-      "org.typelevel"        %% "cats-core"           % catsVersion,
-      "org.typelevel"        %% "cats-effect"         % catsEffectVersion,
-      "org.slf4j"             % "slf4j-simple"        % "1.7.31",
-      "org.jooq"              % "jooq"                % "3.14.12",
-      "org.bouncycastle"      % "bcprov-jdk15on"      % "1.69",
-      "org.bouncycastle"      % "bcpkix-jdk15on"      % "1.69"
+      "dev.profunktor" %% "redis4cats-effects"  % redis4catsVersion,
+      "dev.profunktor" %% "redis4cats-log4cats" % redis4catsVersion,
+      "org.typelevel"  %% "cats-core"           % catsVersion,
+      "org.typelevel"  %% "cats-effect"         % catsEffectVersion,
+      "org.http4s"     %% "http4s-circe"        % http4sVersion,
+      "org.http4s"     %% "http4s-dsl"          % http4sVersion,
+      "org.http4s"     %% "http4s-blaze-server" % http4sVersion,
+      "org.slf4j"       % "slf4j-simple"        % "1.7.31"
     )
   )

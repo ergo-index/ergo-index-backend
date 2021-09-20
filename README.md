@@ -1,8 +1,10 @@
 # Overview
 This project provides the backend functionality for [https://ergo-index.fund](https://ergo-index.fund). It uses the Typelevel ecosystem ([http4s](https://http4s.org/), [cats](https://typelevel.org/cats/) / [cats-effect 3](https://typelevel.org/cats-effect/), [fs2](https://fs2.io/), [circe](https://circe.github.io/circe/)) and tries to use the latest functional programming approaches. Please feel free to open an issue if you notice anything that can be improved!
 
-# Architecture
+# Running the Application
+See ADMINISTRATION.md for setup instructions. After on-time setup it will be as easy as `docker-compose up`, but there are important security instructions you should follow first.
 
+# Architecture
 This is a [multi-project SBT build](https://www.scala-sbt.org/1.x/docs/Multi-Project.html), where each project is prefixed with a number that represents its layer. The higher layers depend on lower layers.
 
 ## Layer 1 (Ports)
