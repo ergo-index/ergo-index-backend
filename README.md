@@ -8,34 +8,13 @@ See ADMINISTRATION.md for setup instructions. After on-time setup it will be as 
 This is a [multi-project SBT build](https://www.scala-sbt.org/1.x/docs/Multi-Project.html), where each project is prefixed with a number that represents its layer. The higher layers depend on lower layers.
 
 ## Layer 1 (Ports)
-These projects contain interfaces for Entities, EntityGateways (AKA repositories), and Controllers. They also contain a Boundary that is implemented purely in terms of the interfaces. Some of the Boundary and Controller functionality is redundant (e.g., a Boundary function just forwards the arguments to a Controller function with the same name). This is intentional to maintain optimal separation (see Entity-Control-Boundary section below).
-
-```
-01-port-keypair
-01-port-jwt
-01-port-auth
-```
+Layer 1 projects contain interfaces ("ports") for Entities, EntityGateways (AKA repositories), and Controllers. They also contain a Boundary that is implemented purely in terms of the interfaces. Some of the Boundary and Controller functionality is redundant (e.g., a Boundary function just forwards the arguments to a Controller function with the same name). This is intentional to maintain optimal separation (see Entity-Control-Boundary section below).
 
 ## Layer 2 (Persistence, Delivery, and Adapters)
-These projects involve persisting data (i.e., implementing the Layer 1 EntityGateways), delivering/presenting the application, and providing implementations (AKA adapters) for the Layer 1 interfaces (AKA ports -- see ports and adapters architecture below). The only delivery that is currently supported is HTTP using http4s, so this delivery project maps endpoint routes to functions using Layer 1 Boundaries.
-
-```
-02-adapter-keypair-bouncycastle_ed25519
-02-adapter-jwt-ed25519
-02-delivery-http4s
-02-persistence-keypair-file
-02-persistence-keypair-redis
-02-persistence-auth-inmemory
-02-persistence-auth-redis
-```
+Layer 2 projects involve persisting data (i.e., implementing the Layer 1 EntityGateways), delivering/presenting the application, and providing implementations (AKA adapters) for the Layer 1 interfaces (AKA ports -- see ports and adapters architecture below). The only delivery that is currently supported is HTTP using http4s, so this delivery project maps endpoint routes to functions using Layer 1 Boundaries.
 
 ## Layer 3 (Main)
-These projects are essentially assortments of dependencies that run the main program. For example, `03-main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_redis` uses http4s for the delivery module (project called `02-delivery-http4s`), flat file storage using the BouncyCastle library for the keypair module (project called `02-persistence-keypair-bouncycastle_file`), the Ed25519 signature scheme for the JWT module (project called `02-adapter-jwt-ed25519`), and a Redis database for the auth module (project called `02-persistence-auth-redis`).
-
-```
-03-main-http4s-keypair_file-auth_inmemory
-03-main-http4s-keypair_file-auth_redis
-```
+Layer 3 essentially contains assortments of dependencies that run the main program. It's easy to add other projects at this level (e.g., swap out auth_redis for auth_inmemory), but we only have use for one program so we only support that one here. The Layer 3 project that we support uses http4s for the delivery module (project called `02-delivery-http4s`), flat file storage using the BouncyCastle library for the keypair module (project called `02-persistence-keypair-bouncycastle_file`), the Ed25519 signature scheme for the JWT module (project called `02-adapter-jwt-ed25519`), and a Redis database for the auth module (project called `02-persistence-auth-redis`).
 
 ## Patterns
 ### Entity-Control-Boundary

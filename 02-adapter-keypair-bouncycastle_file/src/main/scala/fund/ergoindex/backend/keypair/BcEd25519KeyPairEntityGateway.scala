@@ -16,7 +16,6 @@ import fs2.io.file.{Files, Path}
   * EdDSA signature scheme using SHA-512 and Curve25519 (AKA Ed25519).
   */
 object BcEd25519KeyPairEntityGateway:
-
   def make(): KeyPairEntityGateway[KeyPair] = new:
 
     val keyAlgo     = "Ed25519"

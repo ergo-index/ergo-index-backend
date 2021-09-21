@@ -10,8 +10,45 @@ ThisBuild / organization := "fund.ergo-index"
 ThisBuild / scalaVersion := "3.0.0"
 ThisBuild / version      := "0.0.1-SNAPSHOT"
 
-// Set the default project to main
-Global / onLoad ~= (_ andThen ("project main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_redis" :: _))
+// Only build sub-projects if they aren't don't have .class files generated
+ThisBuild / trackInternalDependencies := TrackLevel.TrackIfMissing
+ThisBuild / exportJars                := true
+
+// Set merge strategy for duplicate files when generating fat JAR
+ThisBuild / assemblyMergeStrategy := {
+  case x if x.contains("io.netty.versions.properties") => MergeStrategy.discard
+  case x if x.contains("module-info.class")            => MergeStrategy.discard
+  case x =>
+    val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
+    oldStrategy(x)
+}
+
+lazy val root =
+  project
+    .in(file("."))
+    .aggregate(
+      `port-keypair`,
+      `adapter-keypair-bouncycastle_file`,
+      `port-jwt`,
+      `adapter-jwt-ed25519`,
+      `port-auth`,
+      `persistence-auth-redis`,
+      `delivery-http4s`,
+      main
+    )
+    .dependsOn(
+      `port-keypair`,
+      `adapter-keypair-bouncycastle_file`,
+      `port-jwt`,
+      `adapter-jwt-ed25519`,
+      `port-auth`,
+      `persistence-auth-redis`,
+      `delivery-http4s`,
+      main
+    )
+    // Fat JAR configuration using sbt-assembly plugin
+    .settings(assembly / mainClass := Some("fund.ergoindex.backend.main.Main"))
+    .settings(assembly / assemblyJarName := "ergoindex-backend-0.0.1.jar")
 
 lazy val `port-keypair` = project
   .in(file("01-port-keypair"))
@@ -65,16 +102,6 @@ lazy val `adapter-jwt-ed25519` = project
     )
   )
 
-lazy val `persistence-auth-inmemory` = project
-  .in(file("02-persistence-auth-inmemory"))
-  .dependsOn(`port-auth` % "compile->compile;test->test")
-  .settings(
-    libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"   % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectVersion
-    )
-  )
-
 lazy val `persistence-auth-redis` = project
   .in(file("02-persistence-auth-redis"))
   .dependsOn(`port-auth` % "compile->compile;test->test")
@@ -102,28 +129,8 @@ lazy val `delivery-http4s` = project
     )
   )
 
-lazy val `main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_inmemory` = project
-  .in(file("03-main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_inmemory"))
-  .dependsOn(`port-auth` % "compile->compile;test->test")
-  .dependsOn(`port-jwt` % "compile->compile;test->test")
-  .dependsOn(`port-keypair` % "compile->compile;test->test")
-  .dependsOn(`delivery-http4s` % "compile->compile;test->test")
-  .dependsOn(`adapter-keypair-bouncycastle_file` % "compile->compile;test->test")
-  .dependsOn(`adapter-jwt-ed25519` % "compile->compile;test->test")
-  .dependsOn(`persistence-auth-inmemory` % "compile->compile;test->test")
-  .settings(
-    libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"           % catsVersion,
-      "org.typelevel" %% "cats-effect"         % catsEffectVersion,
-      "org.http4s"    %% "http4s-circe"        % http4sVersion,
-      "org.http4s"    %% "http4s-dsl"          % http4sVersion,
-      "org.http4s"    %% "http4s-blaze-server" % http4sVersion,
-      "org.slf4j"      % "slf4j-simple"        % "1.7.31"
-    )
-  )
-
-lazy val `main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_redis` = project
-  .in(file("03-main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_redis"))
+lazy val main = project
+  .in(file("03-main"))
   .dependsOn(`port-auth` % "compile->compile;test->test")
   .dependsOn(`port-jwt` % "compile->compile;test->test")
   .dependsOn(`port-keypair` % "compile->compile;test->test")
@@ -143,3 +150,6 @@ lazy val `main-http4s-keypair_bouncycastle_file-jwt_ed25519-auth_redis` = projec
       "org.slf4j"       % "slf4j-simple"        % "1.7.31"
     )
   )
+  // Fat JAR configuration using sbt-assembly plugin
+  .settings(assembly / mainClass := Some("fund.ergoindex.backend.main.Main"))
+  .settings(assembly / assemblyJarName := "ergoindex-backend-0.0.1.jar")

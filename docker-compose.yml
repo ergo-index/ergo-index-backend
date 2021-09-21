@@ -13,14 +13,14 @@ services:
       context: .
       args:
         - OPENJDK_TAG=8u292
-        - SBT_VERSION=1.5.5
+        - SBT_VERSION=1.5.4
     ports:
       - 8080:8080
     depends_on:
       - ergo-index-fund-redis
     networks:
       - ergo-index-fund-backend
-      
+
   # Redis
   ergo-index-fund-redis:
     container_name: ergo-index-fund-redis

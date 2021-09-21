@@ -7,5 +7,5 @@ import dev.profunktor.redis4cats.{Redis, RedisCommands}
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
 
 object RedisResource:
-  def make(): Resource[cats.effect.IO, RedisCommands[IO, String, String]] =
+  def make(): Resource[IO, RedisCommands[IO, String, String]] =
     Redis[IO].utf8("redis://ergo-index-fund-redis")
