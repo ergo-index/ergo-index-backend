@@ -1,3 +1,4 @@
 #!/bin/bash
 
-mkdir -p ~/ergo-index-fund-backend_data/redis/data
+# TODO: Redis is removed, but we'll use mongo eventually
+#mkdir -p ~/ergo-index-fund-backend_data/redis/data

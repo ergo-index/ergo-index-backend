@@ -25,9 +25,7 @@ object HttpServer:
       override lazy val serve: IO[Unit] =
         BlazeServerBuilder[IO](executionContext)
           .bindSocketAddress(InetSocketAddress(host, port))
-          .withHttpApp(
-            httpApp
-          )
+          .withHttpApp(httpApp)
           .serve
           .compile
           .drain
