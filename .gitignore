@@ -33,8 +33,9 @@ hs_err_pid*
 .history/
 .ionide
 
+# JWT keys
+jwt_private_key
+jwt_public_key
+
 # Mac
 .DS_Store
-
-# Docker secrets
-google_application_credentials.json

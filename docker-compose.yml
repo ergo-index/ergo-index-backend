@@ -5,10 +5,6 @@ networks:
     name: ergo-index-fund-backend
     driver: bridge
 
-secrets:
-  google_application_credentials:
-    file: google_application_credentials.json
-
 services:
   # Main application
   ergo-index-fund-backend:
@@ -20,9 +16,17 @@ services:
         - SBT_VERSION=1.5.4
     ports:
       - 8080:8080
+    depends_on:
+      - ergo-index-fund-redis
     networks:
       - ergo-index-fund-backend
-    secrets:
-      - google_application_credentials
-    environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google_application_credentials
+
+  # Redis
+  ergo-index-fund-redis:
+    container_name: ergo-index-fund-redis
+    image: redis
+    volumes:
+      - ~/ergo-index-fund-backend_data/redis/data:/data
+      - ~/ergo-index-fund-backend_data/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - ergo-index-fund-backend
